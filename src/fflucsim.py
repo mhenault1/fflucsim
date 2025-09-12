@@ -99,31 +99,29 @@ class CellMonosome:
 
 class Population:
     
-    def __init__(self, founder, n_gen):
+    def __init__(self, founder, target_div):
         self.founder = founder
-        self.n_gen = n_gen
+        self.target_div = target_div
         self.monosome_fitness = founder.monosome_fitness
         self.monosome_rate = founder.monosome_rate
         self.revert_rate = founder.revert_rate
         self.ploidy = founder.ploidy
 
-    def expand(self, verbose=False, cleanup=True, until_final_size=False):
-        
+    def expand(self, verbose=False, cleanup=True):
+
         pop = [self.founder]
+        len_pop = 1
         uid = self.founder.uid
         gen = self.founder.born
         Events_monosome = []
         Events_revert = []
         time_init = time.time()
         
-        if until_final_size:
-            final_size = 2**self.n_gen
-        
-        for _ in range(self.n_gen):
-            len_pop = len(pop)
+        #for _ in range(self.n_gen):
+        while len_pop < self.target_div:
             gen += 1
             new_gen = []
-            len_new_gen = len(new_gen)
+            len_new_gen = 0
             for c in pop:
                 if c.decide_divide():
                     uid += 1
@@ -135,17 +133,17 @@ class Population:
                         Events_monosome.append((uid, gen))
                     elif new_revert:
                         Events_revert.append((uid, gen))
-                    if until_final_size:
-                        if len_pop + len_new_gen >= final_size:
-                            break
+                    if len_pop + len_new_gen >= self.target_div:
+                        break
                     
             if verbose:
                 print(f'END OF GEN {gen}: daughters/mothers: {len_new_gen}/{len_pop} cumul: {len_pop+len_new_gen}')
-            
-            pop.extend(new_gen)
 
+            pop.extend(new_gen)
+            len_pop += len_new_gen
+            
         if verbose:
-            print(f'final pop size: {len(pop)} Events monosome: {len(Events_monosome)} Events revert: {len(Events_revert)}')
+            print(f'final pop size: {len_pop} Events monosome: {len(Events_monosome)} Events revert: {len(Events_revert)}')
         
         Pop = {c.uid:c for c in pop}
         time_final = time.time()
@@ -165,11 +163,11 @@ class Population:
         Report['monosome_rate'] = self.monosome_rate
         Report['revert_rate'] = self.revert_rate
         Report['ploidy'] = self.ploidy
-        Report['n_events_monosome'] = len(self.Events_monosome)
-        Report['n_events_revert'] = len(self.Events_revert)
-        Report['m_monosome'] = sum([c.monosome for c in self.Population.values()])
-        Report['m_revert'] = sum([c.revertant for c in self.Population.values()])
-        Report['m_total'] = sum([c.monosome or c.revertant for c in self.Population.values()])
+        Report['m_monosome'] = len(self.Events_monosome)
+        Report['m_revert'] = len(self.Events_revert)
+        Report['n_monosome'] = sum([c.monosome for c in self.Population.values()])
+        Report['n_revert'] = sum([c.revertant for c in self.Population.values()])
+        Report['n_total'] = sum([c.monosome or c.revertant for c in self.Population.values()])
         Report['final_size'] = len(self.Population)
 
         return Report
@@ -215,11 +213,11 @@ class FluctuationAssay:
         self.revert_rate = [pop.revert_rate for pop in Populations][0]
         self.ploidy = [pop.ploidy for pop in Populations][0]
         
-        self.n_events_monosome = [pop.Report['n_events_monosome'] for pop in Populations]
-        self.n_events_revert = [pop.Report['n_events_revert'] for pop in Populations]
         self.m_monosome = [pop.Report['m_monosome'] for pop in Populations]
         self.m_revert = [pop.Report['m_revert'] for pop in Populations]
-        self.m_total = [pop.Report['m_total'] for pop in Populations]
+        self.n_monosome = [pop.Report['n_monosome'] for pop in Populations]
+        self.n_revert = [pop.Report['n_revert'] for pop in Populations]
+        self.n_total = [pop.Report['n_total'] for pop in Populations]
         self.final_size = [pop.Report['final_size'] for pop in Populations]
 
         self.Nt = np.mean(self.final_size)
