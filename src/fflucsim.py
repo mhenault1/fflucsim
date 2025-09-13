@@ -274,6 +274,6 @@ class FluctuationAssay:
         
         self.Results.append(fres)
 
-def ngen_monosome_rate(mr, x=20):
-    n_gen = np.int64(np.ceil(np.log2(1/mr*x)))
-    return min([n_gen, 25])
+def target_div_monosome_rate(mr, x=20):
+    target_div = np.int64(x/mr)
+    return min([target_div, 2**25])
