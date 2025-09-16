@@ -117,7 +117,6 @@ class Population:
         Events_revert = []
         time_init = time.time()
         
-        #for _ in range(self.n_gen):
         while len_pop < self.target_div:
             gen += 1
             new_gen = []
@@ -173,8 +172,10 @@ class Population:
         return Report
 
     def clean_population(self):
+        ancestral_monosome = self.founder.monosome
+        ancestral_revertant = self.founder.revertant
         for uid, c in list(self.Population.items()):
-            if not c.monosome and not c.revertant:
+            if c.monosome == ancestral_monosome and c.revertant == ancestral_revertant:
                 del self.Population[uid]
 
 def load_populations(list_of_fn):
@@ -226,9 +227,9 @@ class FluctuationAssay:
     def fit_LD(self, mutant):
 
         if mutant == 'monosome':
-            counts = self.m_total
+            counts = self.n_total
         elif mutant == 'revert':
-            counts = self.m_revert
+            counts = self.n_revert
         
         upper_bound = False
         if np.all(np.array(counts)==0):
@@ -253,9 +254,9 @@ class FluctuationAssay:
             w = self.monosome_fitness
 
         if mutant == 'monosome':
-            counts = self.m_total
+            counts = self.n_total
         elif mutant == 'revert':
-            counts = self.m_revert
+            counts = self.n_revert
             
         upper_bound = False
         if np.all(np.array(counts)==0):
