@@ -205,6 +205,13 @@ class CellMonosome:
             'genealogy':self.genealogy}
         return L
 
+    def get_binary_flag(self):
+        flags = [self.monosome, self.disome, self.revertant, self.revertant2, self.trisome, self.tetrasome]
+        return ''.join([str(int(i)) for i in flags])
+        
+    def select(self):
+        return self.homologs[1] > 0
+
 class Population:
     
     def __init__(self, founder, target_div):
@@ -217,9 +224,10 @@ class Population:
         self.mu_T = founder.mu_T
         self.ploidy = founder.ploidy
 
-    def expand(self, verbose=False, cleanup=True):
+    def expand(self, verbose=False, cleanup=False, select=True):
 
         pop = [self.founder]
+        founder_flag = self.founder.get_binary_flag()
         len_pop = 1
         uid = self.founder.uid
         gen = self.founder.born
@@ -268,7 +276,11 @@ class Population:
         self.Report = self.report()
 
         if cleanup:
-            self.clean_population()
+            self.clean_population(founder_flag)
+        
+        if select:
+            self.select_population()
+            self.ReportSelect = self.report()
 
     def report(self):
         Report = {}
@@ -280,18 +292,25 @@ class Population:
         Report['ploidy'] = self.ploidy
         Report['m_monosome'] = len(self.Events_monosome)
         Report['m_revert'] = len(self.Events_revert)
-        Report['n_monosome'] = sum([c.monosome for c in self.Population.values()])
-        Report['n_revert'] = sum([c.revertant for c in self.Population.values()])
-        Report['n_total'] = sum([c.monosome or c.revertant for c in self.Population.values()])
+        Report['m_revert2'] = len(self.Events_revert2)
+        bool_cts = np.array([[c.monosome, c.revertant, c.revertant2, c.dead] for c in self.Population.values()]).sum(axis=0)
+        Report['n_monosome'] = bool_cts[0]
+        Report['n_revert'] = bool_cts[1]
+        Report['n_revert2'] = bool_cts[2]
+        Report['n_total'] = bool_cts[:3].sum()
+        Report['n_dead'] = bool_cts[3]
         Report['final_size'] = len(self.Population)
 
         return Report
 
-    def clean_population(self):
-        ancestral_monosome = self.founder.monosome
-        ancestral_revertant = self.founder.revertant
+    def clean_population(self, founder_flag):
         for uid, c in list(self.Population.items()):
-            if c.monosome == ancestral_monosome and c.revertant == ancestral_revertant:
+            if c.get_binary_flag() == founder_flag:
+                del self.Population[uid]
+
+    def select_population(self):
+        for uid, c in list(self.Population.items()):
+            if c.select():
                 del self.Population[uid]
 
 def load_populations(list_of_fn):
