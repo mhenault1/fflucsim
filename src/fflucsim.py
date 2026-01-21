@@ -5,7 +5,7 @@ import pysalvador as sal
 
 class CellMonosome:
 
-    def __init__(self, uid, gen, mother):
+    def __init__(self, uid, gen, mother, seed=None):
 
         self.uid = uid
         self.born = gen
@@ -54,7 +54,7 @@ class CellMonosome:
             self.generation_trisome = None
             self.generation_revert2 = None
             self.generation_tetrasome = None
-            self.rng = np.random.default_rng()
+            self.rng = np.random.default_rng(seed)
             self.homologs = {0:1, 1:1}
 
     def founder(self, w_mono, w_triso, mu_A, mu_R, mu_T):
@@ -293,7 +293,11 @@ class Population:
         Report['m_monosome'] = len(self.Events_monosome)
         Report['m_revert'] = len(self.Events_revert)
         Report['m_revert2'] = len(self.Events_revert2)
-        bool_cts = np.array([[c.monosome, c.revertant, c.revertant2, c.dead] for c in self.Population.values()]).sum(axis=0)
+        final_size = len(self.Population)
+        if final_size > 0:
+            bool_cts = np.array([[c.monosome, c.revertant, c.revertant2, c.dead] for c in self.Population.values()]).sum(axis=0)
+        else:
+            bool_cts = np.repeat(0,4)
         Report['n_monosome'] = bool_cts[0]
         Report['n_revert'] = bool_cts[1]
         Report['n_revert2'] = bool_cts[2]
@@ -410,6 +414,6 @@ class FluctuationAssay:
         
         self.Results.append(fres)
 
-def target_div_monosome_rate(mr, x=20):
+def target_div_monosome_rate(mr, x=20, max_div=24):
     target_div = np.int64(x/mr)
-    return min([target_div, 2**25])
+    return min([target_div, 2**max_div])
