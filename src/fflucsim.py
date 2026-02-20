@@ -348,19 +348,20 @@ class FluctuationAssay:
 
         self.Populations = Populations
         self.replicates = len(Populations)
-        self.monosome_fitness = [pop.monosome_fitness for pop in Populations][0]
-        self.monosome_rate = [pop.monosome_rate for pop in Populations][0]
-        self.revert_rate = [pop.revert_rate for pop in Populations][0]
-        self.ploidy = [pop.ploidy for pop in Populations][0]
+        self.w_mono = Populations[0].w_mono
+        self.w_triso = Populations[0].w_triso
+        self.mu_A = Populations[0].mu_A
+        self.mu_R = Populations[0].mu_R
+        self.mu_T = Populations[0].mu_T
+        self.target_div = Populations[0].target_div
         
         self.m_monosome = [pop.Report['m_monosome'] for pop in Populations]
         self.m_revert = [pop.Report['m_revert'] for pop in Populations]
         self.n_monosome = [pop.Report['n_monosome'] for pop in Populations]
         self.n_revert = [pop.Report['n_revert'] for pop in Populations]
+        self.n_revert2 = [pop.Report['n_revert2'] for pop in Populations]
         self.n_total = [pop.Report['n_total'] for pop in Populations]
-        self.final_size = [pop.Report['final_size'] for pop in Populations]
 
-        self.Nt = np.mean(self.final_size)
         self.Results = []
 
     def fit_LD(self, mutant):
@@ -381,16 +382,16 @@ class FluctuationAssay:
         except:
             m = np.nan
             m_ci = (np.nan, np.nan)
-        mu = m/self.Nt
-        mu_ci = m_ci/self.Nt
-        fres = FluctuationAssayResult(m, m_ci, self.Nt, upper_bound, mutant, 'LD', 1)
+        mu = m/self.target_div
+        mu_ci = m_ci/self.target_div
+        fres = FluctuationAssayResult(m, m_ci, self.target_div, upper_bound, mutant, 'LD', 1)
         
         self.Results.append(fres)
 
     def fit_MK(self, mutant, w=None):
 
         if w == None:
-            w = self.monosome_fitness
+            w = self.w_mono
 
         if mutant == 'monosome':
             counts = self.n_total
@@ -408,9 +409,9 @@ class FluctuationAssay:
         except:
             m = np.nan
             m_ci = (np.nan, np.nan)
-        mu = m/self.Nt
-        mu_ci = m_ci/self.Nt
-        fres = FluctuationAssayResult(m, m_ci, self.Nt, upper_bound, mutant, 'MK', w)
+        mu = m/self.target_div
+        mu_ci = m_ci/self.target_div
+        fres = FluctuationAssayResult(m, m_ci, self.target_div, upper_bound, mutant, 'MK', w)
         
         self.Results.append(fres)
 
