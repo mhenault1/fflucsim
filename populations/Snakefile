@@ -1,0 +1,48 @@
+from pandas import read_csv
+import fflucsim as ff
+from pickle import dump
+
+pop_info = read_csv('../script/populations_info.csv').set_index('pop_id')
+
+def get_w_mono(I):
+    return [pop_info.loc[i, 'w_mono'] for i in I]
+
+def get_mu_A(I):
+    return [pop_info.loc[i, 'mu_A'] for i in I]
+
+def get_mu_R(I):
+    return [pop_info.loc[i, 'mu_R'] for i in I]
+
+def get_target_div(I):
+    return [pop_info.loc[i, 'target_div'] for i in I]
+
+def get_seed(I):
+    return [int(i.strip('p')) for i in I]
+
+rule all:
+    input:
+        expand('../data/pickle/pop.{i}.pkl', i=pop_info.index)
+
+rule pop_chrom:
+    params:
+        w_mono = get_w_mono,
+        mu_A = get_mu_A,
+        mu_R = get_mu_R,
+        target_div = get_target_div,
+        seed = get_seed
+    output:
+        pkl = '../data/pickle/pop.{i}.pkl'
+    run:
+        w_mono = params.w_mono[0]
+        w_triso = 1
+        mu_A = params.mu_A[0]
+        mu_R = params.mu_R[0]
+        mu_T = 0
+        target_div = params.target_div[0]
+        seed = params.seed[0]
+
+        founder = ff.CellMonosome(0, -1, None, seed).founder(w_mono, w_triso, mu_A, mu_R, mu_T)
+        pop = ff.Population(founder, target_div)
+        pop.expand()
+        with open(output.pkl, 'wb') as fo:
+            dump(pop, fo)

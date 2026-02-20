@@ -1,0 +1,35 @@
+from pandas import read_csv
+import fflucsim as ff
+from pickle import dump
+
+assays_info = read_csv('../script/assays_info.csv').set_index('assay')
+pop_info = read_csv('../script/populations_info.csv').set_index('assay')
+
+def get_list_of_fn(A):
+    LOFN = []
+    for a in A:
+        lop = pop_info.loc[a, 'pop_id'].values
+        lofn = [f'../data/pickle/pop.{p}.pkl' for p in lop]
+        LOFN.append(lofn)
+
+    return LOFN
+
+rule all:
+    input:
+        expand('../data/pickle/fa.{a}.pkl', a=assays_info.index)
+
+rule fa:
+    params:
+        lofn = get_list_of_fn
+    output:
+        pkl = '../data/pickle/fa.{a}.pkl'
+    run:
+        lofn = params.lofn[0]
+        Populations = ff.load_populations(lofn)
+        FA = ff.FluctuationAssay(Populations)
+        for m in ['monosome', 'revert']:
+            FA.fit_LD(m)
+            FA.fit_MK(m)
+        with open(output.pkl, 'wb') as fo:
+            print(len(FA.Results))
+            dump(FA, fo)
